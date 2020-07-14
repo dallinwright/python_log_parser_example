@@ -13,12 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class Statistics(object):
-    def __init__(self):
+    def __init__(self, start_date, end_date):
         self._domains = {}
+        self._start_date = start_date
+        self._end_date = end_date
 
     @property
     def domains(self):
         return self._domains
+
+    @property
+    def start_date(self):
+        return self._start_date
+
+    @property
+    def end_date(self):
+        return self._end_date
 
     @domains.setter
     def domains(self, value):
@@ -27,6 +37,14 @@ class Statistics(object):
     @domains.deleter
     def domains(self):
         del self._domains
+
+    @start_date.setter
+    def start_date(self, value):
+        self._start_date = value
+
+    @end_date.setter
+    def end_date(self, value):
+        self._end_date = value
 
     def add_domain(self, domain):
         self._domains[domain] = {
@@ -47,7 +65,7 @@ class Statistics(object):
             logger.error("Error updating {0} total count".format(domain))
 
     def display_summary(self):
-        print('Between time XXXXXXXXXX and time YYYYYYYYYY:')
+        print('Between time {0} and time {1}:'.format(self._start_date, self._end_date))
 
         for domain in self._domains:
             # Fail safe for division by 0
@@ -64,15 +82,21 @@ def main():
     # Initialize parser
     parser = argparse.ArgumentParser(description='Vimeo log statistic parser!')
 
+    # Datetime now, to be absolutely exact. Two calculation for date in different spots in here will be different.
+    now = datetime.now()
+
     parser.add_argument('--start_date',
-                        default=datetime.now() - timedelta(hours=1),
+                        default=now - timedelta(hours=1),
                         help='Start date to search from, defaults to 1 hour before now')
     parser.add_argument('--end_date',
-                        default=datetime.now(),
+                        default=now,
                         help='End date to search up until, defaults to now')
 
     args = parser.parse_args()
-    current_stats = Statistics()
+    current_stats = Statistics(args.start_date, args.end_date)
+
+    logger.info('Searching from time {0}'.format(args.start_date))
+    logger.info('Searching from time {0}'.format(args.end_date))
 
     # Reads file line by line, avoids loading into memory as file could be >=10Gb
     with open("log_sample.txt") as infile:
@@ -100,10 +124,10 @@ def main():
                 current_stats.add_count(domain)
 
             except IndexError:
-                logger.error("Invalid log format, aborting!")
+                logger.critical("Invalid log format, aborting!")
                 sys.exit(1)
 
-        logger.info(current_stats.domains)
+    logger.info('Vimeo statistic aggregator complete.')
 
     current_stats.display_summary()
 
