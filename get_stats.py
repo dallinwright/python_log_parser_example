@@ -13,22 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class Statistics(object):
-    def __init__(self, start_date, end_date):
+    def __init__(self, start, end):
         self._domains = {}
-        self._start_date = start_date
-        self._end_date = end_date
+        self._start = datetime.fromtimestamp(float(start))
+        self._end = datetime.fromtimestamp(float(end))
 
     @property
     def domains(self):
         return self._domains
 
     @property
-    def start_date(self):
-        return self._start_date
+    def start(self):
+        return self._start
 
     @property
-    def end_date(self):
-        return self._end_date
+    def end(self):
+        return self._end
 
     @domains.setter
     def domains(self, value):
@@ -38,13 +38,13 @@ class Statistics(object):
     def domains(self):
         del self._domains
 
-    @start_date.setter
-    def start_date(self, value):
-        self._start_date = value
+    @start.setter
+    def start(self, value):
+        self._start = value
 
-    @end_date.setter
-    def end_date(self, value):
-        self._end_date = value
+    @end.setter
+    def end(self, value):
+        self._end = value
 
     def add_domain(self, domain):
         self._domains[domain] = {
@@ -65,7 +65,7 @@ class Statistics(object):
             logger.error("Error updating {0} total count".format(domain))
 
     def display_summary(self):
-        print('Between time {0} and time {1}:'.format(self._start_date, self._end_date))
+        print('Between time {0} and time {1}:'.format(self._start, self._end))
 
         for domain in self._domains:
             # Fail safe for division by 0
@@ -85,18 +85,18 @@ def main():
     # Datetime now, to be absolutely exact. Two calculation for date in different spots in here will be different.
     now = datetime.now()
 
-    parser.add_argument('--start_date',
+    parser.add_argument('--start',
                         default=now - timedelta(hours=1),
                         help='Start date to search from, defaults to 1 hour before now')
-    parser.add_argument('--end_date',
+    parser.add_argument('--end',
                         default=now,
                         help='End date to search up until, defaults to now')
 
     args = parser.parse_args()
-    current_stats = Statistics(args.start_date, args.end_date)
+    current_stats = Statistics(args.start, args.end)
 
-    logger.info('Searching from time {0}'.format(args.start_date))
-    logger.info('Searching from time {0}'.format(args.end_date))
+    logger.info('Searching from time {0}'.format(args.start))
+    logger.info('Searching from time {0}'.format(args.end))
 
     # Reads file line by line, avoids loading into memory as file could be >=10Gb
     with open("log_sample.txt") as infile:
@@ -106,22 +106,24 @@ def main():
             try:
                 # Get iso timestamp from position 0
                 date = datetime.fromtimestamp(float(parsed_message[0]))
-                # Get domain from position 2, strip all whitespace
-                domain = parsed_message[2].replace(" ", "")
-                # Get http status code from position 4, parse string as int
-                status = int(parsed_message[4])
 
-                # If domain not in current dict, create stat entry
-                if domain not in current_stats.domains:
-                    logger.info('Encountered new domain - {0}'.format(domain))
-                    current_stats.add_domain(domain)
+                if current_stats.start < date < current_stats.end:
+                    # Get domain from position 2, strip all whitespace
+                    domain = parsed_message[2].replace(" ", "")
+                    # Get http status code from position 4, parse string as int
+                    status = int(parsed_message[4])
 
-                # Increment 500 count for domain
-                if status >= 500:
-                    current_stats.add_error(domain)
+                    # If domain not in current dict, create stat entry
+                    if domain not in current_stats.domains:
+                        logger.info('Encountered new domain - {0}'.format(domain))
+                        current_stats.add_domain(domain)
 
-                # Increment count for domain
-                current_stats.add_count(domain)
+                    # Increment 500 count for domain
+                    if status >= 500:
+                        current_stats.add_error(domain)
+
+                    # Increment count for domain
+                    current_stats.add_count(domain)
 
             except IndexError:
                 logger.critical("Invalid log format, aborting!")
