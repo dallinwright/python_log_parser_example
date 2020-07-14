@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 class Statistics(object):
     def __init__(self, start, end):
+        """
+        Create a stat tracker class
+        :param start: datetime from which to start looking
+        :param end: datetime to look until
+        """
         self._domains = {}
         self._start = datetime.fromtimestamp(float(start))
         self._end = datetime.fromtimestamp(float(end))
@@ -86,10 +91,10 @@ def main():
     now = datetime.now()
 
     parser.add_argument('--start',
-                        default=now - timedelta(hours=1),
+                        default=(now - timedelta(hours=1)).timestamp(),
                         help='Start date to search from, defaults to 1 hour before now')
     parser.add_argument('--end',
-                        default=now,
+                        default=now.timestamp(),
                         help='End date to search up until, defaults to now')
 
     args = parser.parse_args()
@@ -107,7 +112,7 @@ def main():
                 # Get iso timestamp from position 0
                 date = datetime.fromtimestamp(float(parsed_message[0]))
 
-                if current_stats.start < date < current_stats.end:
+                if current_stats.start <= date < current_stats.end:
                     # Get domain from position 2, strip all whitespace
                     domain = parsed_message[2].replace(" ", "")
                     # Get http status code from position 4, parse string as int
