@@ -2,40 +2,25 @@
 
 import logging
 import argparse
+import sys
 from datetime import datetime, timedelta
 
 
 class Statistics(object):
     def __init__(self):
-        self._domain_list = []
-        self._status_codes = None
+        self._domain_errors = {}
 
     @property
     def domain_list(self):
-        """I'm the 'x' property."""
         return self._domain_list
-
-    @property
-    def status_codes(self):
-        """I'm the 'x' property."""
-        return self._status_codes
 
     @domain_list.setter
     def domain_list(self, value):
-        print("setter of x called")
-        self._domain_list = value
-
-    @status_codes.setter
-    def status_codes(self, value):
-        self._status_codes = value
+        self._domain_errors = value
 
     @domain_list.deleter
     def domain_list(self):
-        del self._domain_list
-
-    @status_codes.deleter
-    def status_codes(self):
-        del self._status_codes
+        del self._domain_errors
 
 
 def configure_logger():
@@ -66,28 +51,23 @@ def main():
     args = parser.parse_args()
     current_stats = Statistics()
 
-    # logger.info(args)
-    # This will pass with glory
-    # c = Statistics()
-    # c.domain_list = 'foo'  # setter called
-    # foo = c.domain_list  # getter called
-    # del c.domain_list  # deleter called
-
     # Reads file line by line, avoids loading into memory as file could be >=10Gb
     with open("log_sample.txt") as infile:
         for line in infile:
             parsed_message = line.split('|')
 
-            # Get iso timestamp from position 0
-            date = datetime.fromtimestamp(float(parsed_message[0]))
+            try:
+                # Get iso timestamp from position 0
+                date = datetime.fromtimestamp(float(parsed_message[0]))
+                # Get domain from position 2
+                domain = parsed_message[2]
+                # Get http status code from position 4
+                status = parsed_message[4]
+            except IndexError as e:
+                logger.error("Invalid log format, aborting!")
+                sys.exit(1)
 
-            # Get domain from position 2
-            domain = parsed_message[2]
-
-            # Get http status code from position 4
-            status = parsed_message[4]
-
-            logger.info("{0} - {1} - {2}".format(date, domain, status))
+        # logger.info("{0} - {1} - {2}".format(date, domain, status))
 
 
 if __name__ == '__main__':
