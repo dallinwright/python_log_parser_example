@@ -8,19 +8,25 @@ from datetime import datetime, timedelta
 
 class Statistics(object):
     def __init__(self):
-        self._domain_errors = {}
+        self._domains = {}
 
     @property
-    def domain_list(self):
-        return self._domain_list
+    def domains(self):
+        return self._domains
 
-    @domain_list.setter
-    def domain_list(self, value):
-        self._domain_errors = value
+    @domains.setter
+    def domains(self, value):
+        self._domains = value
 
-    @domain_list.deleter
-    def domain_list(self):
-        del self._domain_errors
+    @domains.deleter
+    def domains(self):
+        del self._domains
+
+    def add_domain(self, domain):
+        self._domains[domain] = {
+            'total': 0,
+            'error': 0
+        }
 
 
 def configure_logger():
@@ -39,6 +45,7 @@ def configure_logger():
 def main():
     # Initialize logger
     logger = configure_logger()
+    # Initialize parser
     parser = argparse.ArgumentParser(description='Vimeo log statistic parser!')
 
     parser.add_argument('--start_date',
@@ -59,15 +66,25 @@ def main():
             try:
                 # Get iso timestamp from position 0
                 date = datetime.fromtimestamp(float(parsed_message[0]))
-                # Get domain from position 2
-                domain = parsed_message[2]
-                # Get http status code from position 4
-                status = parsed_message[4]
+                # Get domain from position 2, strip all whitespace
+                domain = parsed_message[2].replace(" ", "")
+                # Get http status code from position 4, parse string as int
+                status = int(parsed_message[4])
+
+                # If domain not in current dict, create stat entry
+                if domain not in current_stats.domains:
+                    logger.info('Encountered new domain - {0}'.format(domain))
+                    current_stats.add_domain(domain)
+
+                # Increment 500 count for domain
+                if status >= 500:
+                    error_count = current_stats.domains[domain].get('error')
+
             except IndexError as e:
                 logger.error("Invalid log format, aborting!")
                 sys.exit(1)
 
-        # logger.info("{0} - {1} - {2}".format(date, domain, status))
+        logger.info(current_stats.domains)
 
 
 if __name__ == '__main__':
