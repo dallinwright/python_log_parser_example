@@ -5,6 +5,12 @@ import argparse
 import sys
 from datetime import datetime, timedelta
 
+# Global logger config
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)-8s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+
 
 class Statistics(object):
     def __init__(self):
@@ -28,23 +34,33 @@ class Statistics(object):
             'error': 0
         }
 
+    def add_error(self, domain):
+        try:
+            self._domains[domain]['error'] = self._domains.get(domain, {}).get('error') + 1
+        except TypeError:
+            logger.error("Error updating {0} error count".format(domain))
 
-def configure_logger():
-    """
-    Configure and setup baseline python logger, format is date - time - level - message
+    def add_count(self, domain):
+        try:
+            self._domains[domain]['total'] = self._domains.get(domain, {}).get('total') + 1
+        except TypeError:
+            logger.error("Error updating {0} total count".format(domain))
 
-    :return:
-    Logger with format and baseline configuration
-    """
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(levelname)-8s %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-    return logging.getLogger(__name__)
+    def display_summary(self):
+        print('Between time XXXXXXXXXX and time YYYYYYYYYY:')
+
+        for domain in self._domains:
+            # Fail safe for division by 0
+            if self._domains.get(domain, {}).get('total') != 0:
+                # Calculate percent 5xx errors
+                percent = self._domains[domain]['error'] / self._domains[domain]['total'] * 100
+                # Round percent to 2 decimals, pretty it up by forcing two decimal points
+                pretty_percent = "{:.2f}".format(round(percent, 2))
+                # Print summary for domain
+                print("{0} returned {1}% 5xx errors".format(domain, pretty_percent))
 
 
 def main():
-    # Initialize logger
-    logger = configure_logger()
     # Initialize parser
     parser = argparse.ArgumentParser(description='Vimeo log statistic parser!')
 
@@ -78,13 +94,18 @@ def main():
 
                 # Increment 500 count for domain
                 if status >= 500:
-                    error_count = current_stats.domains[domain].get('error')
+                    current_stats.add_error(domain)
 
-            except IndexError as e:
+                # Increment count for domain
+                current_stats.add_count(domain)
+
+            except IndexError:
                 logger.error("Invalid log format, aborting!")
                 sys.exit(1)
 
         logger.info(current_stats.domains)
+
+    current_stats.display_summary()
 
 
 if __name__ == '__main__':
