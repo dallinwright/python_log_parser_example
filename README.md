@@ -14,12 +14,23 @@ You can optionally specify a start date and an end date via timestamp. For examp
 ./get_stats.py --start 1493969101.647 --end 1493969101.666
 ```
 
+By default, if you do not specify astart or end date, the default values are 1 hour ago for the start up until the present for the end.
+
 
 ### Example output
-
+![output](./result.gif)
 
 ### Assumptions
 
+- Timestamps were in the default python timestamp format (format provided by datetime.timestamp() function)
+
+- Single threading/performance on a 10Gb+ size file is irrelevant
+
+### Improvements
+
+- CI/CD pipeline with unit/integration testing
+- Git Hooks to do linting/formatting pre-commit
+- Git repo with relevant Jira/Slack/etc integrations.
 
 ### Dependencies 
 
