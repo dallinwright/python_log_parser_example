@@ -2,6 +2,8 @@
 
 This is a single threaded python application that takes in a log file of any size and reads line by line until the end is reached. It will log messages as it encounters new domains, and some small logic and feedback stages to improve developer experience (DX) and user experience (UX). 
 
+Please note, this is a contrived example of how to make a tool to do this. It is not complete, and there exists already built industry wide solutions that are better than this script such as an ELK stack.
+
 ### Instructions
 Ensure `get_stats.py` is executable by running on a *nix system 
 ```bash

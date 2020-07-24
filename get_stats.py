@@ -120,6 +120,9 @@ def main():
     parser.add_argument('--end',
                         default=now.timestamp(),
                         help='End date to search up until, defaults to now')
+    parser.add_argument('filename',
+                        default=now.timestamp(),
+                        help='End date to search up until, defaults to now')
 
     args = parser.parse_args()
 
@@ -130,7 +133,7 @@ def main():
     logger.info('Searching from time {0}'.format(args.end))
 
     # Reads file line by line, avoids loading into memory as file could be >=10Gb
-    with open("log_sample.txt") as infile:
+    with open(args.filename) as infile:
         for line in infile:
             # Split log file on char |, this is not robust
             parsed_message = line.split('|')
